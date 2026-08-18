@@ -38,10 +38,10 @@ from claude_agent_sdk import (
     create_sdk_mcp_server,
 )
 
-# server.py and esv_client.py live in the repo root (the actual MCP server
-# package); this client example lives one level down and imports them
-# in-process, so the root has to be on sys.path.
-SERVER_DIR = Path(__file__).resolve().parent.parent
+# server.py and esv_client.py live in ../server (the actual MCP server
+# package); this client example imports them in-process, so that directory
+# has to be on sys.path.
+SERVER_DIR = Path(__file__).resolve().parent.parent / "server"
 sys.path.insert(0, str(SERVER_DIR))
 
 import esv_client  # noqa: E402

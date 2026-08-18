@@ -1,6 +1,7 @@
 """Chat web app for talking to the ESV Bible agent (text + audio).
 
-Run from the repo root with:  uv run --group client-example client-example/webapp.py
+Run from the repo root with:
+  uv run --project server --group client-example client-example/webapp.py
 
 Rides your Claude.ai subscription via the `claude` CLI (see agent.py) rather
 than spending Developer Platform API credits — make sure ANTHROPIC_API_KEY

@@ -6,18 +6,19 @@ An MCP server that wraps the [ESV Bible API](https://api.esv.org/docs/), exposin
 - `get_passage_text(reference, ...)` — retrieve plain-text Scripture for a reference (e.g. `"John 3:16"`, `"Genesis 1-3"`).
 - `get_passage_audio_url(reference)` — resolve a direct MP3 URL for spoken-word audio of a passage.
 
-The server itself is just `server.py`, `esv_client.py`, and `canon.py` — that's what GitHub
-Releases track. A small Flask chat app that exercises the server end-to-end lives separately
-in [`client-example/`](client-example/); it's a demo/testing harness, not part of the server.
+The server itself lives in [`server/`](server/) (`server.py`, `esv_client.py`, `canon.py`) —
+that's what GitHub Releases track. A small Flask chat app that exercises the server
+end-to-end lives separately in [`client-example/`](client-example/); it's a demo/testing
+harness, not part of the server.
 
 ## Setup
 
 1. Get a free API key at https://api.esv.org/ (requires a registered application).
-2. Copy `.env.example` to `.env` in this directory and fill in your key:
+2. Copy `server/.env.example` to `server/.env` and fill in your key:
 
    ```bash
-   cp .env.example .env
-   # then edit .env and set ESV_API_KEY=your-key-here
+   cp server/.env.example server/.env
+   # then edit server/.env and set ESV_API_KEY=your-key-here
    ```
 
    The server loads `.env` itself at startup (via `python-dotenv`), so this works no matter
@@ -26,14 +27,14 @@ in [`client-example/`](client-example/); it's a demo/testing harness, not part o
    git-ignored; no key is stored in the repo.
 
 3. To use this server from an MCP client (Claude Code, Claude Desktop, etc.), point its
-   `.mcp.json`/config at this directory, e.g.:
+   `.mcp.json`/config at the `server/` directory, e.g.:
 
    ```json
    {
      "mcpServers": {
        "esv-bible": {
          "command": "uv",
-         "args": ["--directory", "/path/to/esv-bible-mcp-server", "run", "server.py"]
+         "args": ["--directory", "/path/to/esv-bible-mcp-server/server", "run", "server.py"]
        }
      }
    }
@@ -42,6 +43,7 @@ in [`client-example/`](client-example/); it's a demo/testing harness, not part o
 ## Running standalone
 
 ```bash
+cd server
 uv sync
 uv run server.py
 ```
@@ -49,6 +51,7 @@ uv run server.py
 ## Running with the MCP Inspector
 
 ```bash
+cd server
 uv run mcp dev server.py
 ```
 

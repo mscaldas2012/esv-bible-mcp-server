@@ -9,8 +9,8 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
-# The client-example/ chat app additionally needs flask and claude-agent-sdk;
-# see client-example/README.md — it isn't part of the released server package.
+# The ../client-example chat app additionally needs flask and claude-agent-sdk;
+# see ../client-example/README.md — it isn't part of the released server package.
 [dependency-groups]
 client-example = [
     "flask>=3.0.0",
