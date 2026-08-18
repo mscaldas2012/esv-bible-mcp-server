@@ -28,9 +28,13 @@ MAX_PAGE_SIZE = 100
 
 
 class ESVAPIError(RuntimeError):
-    """Base error for a failed ESV API request. `category` classifies the failure."""
+    """Base error for a failed ESV API request. `category` classifies the failure.
 
-    category = "unknown"
+    Every raised instance must be one of the four subclasses below — the base
+    class has no `category` of its own, so a status code that falls through
+    `_classify_status_error` without a subclass is a bug in that function,
+    not a legitimate fifth category.
+    """
 
 
 class TransientESVError(ESVAPIError):
@@ -67,9 +71,11 @@ def _classify_status_error(exc: httpx.HTTPStatusError, action: str) -> ESVAPIErr
         return TransientESVError(f"ESV API rate-limited the {action} request (429).")
     if status >= 500:
         return TransientESVError(f"ESV API is having trouble ({status}) during {action}.")
-    if status == 400:
-        return ValidationESVError(f"ESV API rejected the {action} request as malformed (400).")
-    return ESVAPIError(f"ESV API {action} request failed: {status}")
+    # 400 falls here explicitly; any other status (e.g. a 404, or a new
+    # code the ESV API starts returning) also lands here rather than
+    # exposing an "unknown" category the four-category contract doesn't
+    # define — retrying an unrecognized status as-is won't help.
+    return ValidationESVError(f"ESV API rejected the {action} request ({status}).")
 
 
 def _classify_request_error(exc: httpx.RequestError, action: str) -> TransientESVError:
