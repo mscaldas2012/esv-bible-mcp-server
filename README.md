@@ -55,6 +55,30 @@ cd server
 uv run mcp dev server.py
 ```
 
+## Running via Docker
+
+A prebuilt image is published to Docker Hub as
+[`mscaldas/esv-bible-mcp-server`](https://hub.docker.com/r/mscaldas/esv-bible-mcp-server) on
+every GitHub Release (see [`.github/workflows/docker-release.yml`](.github/workflows/docker-release.yml)):
+
+```bash
+docker run --rm -i -e ESV_API_KEY=your-key-here mscaldas/esv-bible-mcp-server
+```
+
+The server communicates over stdio, so an MCP client would run it the same way, e.g.:
+
+```json
+{
+  "mcpServers": {
+    "esv-bible": {
+      "command": "docker",
+      "args": ["run", "--rm", "-i", "-e", "ESV_API_KEY", "mscaldas/esv-bible-mcp-server"],
+      "env": { "ESV_API_KEY": "your-key-here" }
+    }
+  }
+}
+```
+
 ## Trying it out: the client example
 
 See [`client-example/README.md`](client-example/README.md) for a Flask chat UI that drives
