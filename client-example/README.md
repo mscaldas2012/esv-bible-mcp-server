@@ -37,3 +37,24 @@ uv run --project server --group client-example client-example/webapp.py
 ```
 
 Then open http://localhost:5050.
+
+## Running against the Docker image instead
+
+By default `agent.py` spawns the server with `uv --directory ../server run server.py`. To
+point it at a Docker image instead (e.g. to sanity-check a release build), set
+`ESV_MCP_DOCKER_IMAGE` to the image tag before starting the app:
+
+```bash
+ESV_MCP_DOCKER_IMAGE=mscaldas/esv-bible-mcp-server \
+  uv run --project server --group client-example client-example/webapp.py
+```
+
+or, for a local build:
+
+```bash
+ESV_MCP_DOCKER_IMAGE=esv-bible-mcp-server:local \
+  uv run --project server --group client-example client-example/webapp.py
+```
+
+This still reads `../server/.env` for `ESV_API_KEY` (passed to the container via
+`docker run --env-file`).

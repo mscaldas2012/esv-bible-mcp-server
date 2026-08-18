@@ -20,6 +20,7 @@ the rendered template back as the tool result for the model to follow.
 """
 
 import dataclasses
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -43,6 +44,12 @@ from claude_agent_sdk import (
 # has to be on sys.path.
 SERVER_DIR = Path(__file__).resolve().parent.parent / "server"
 sys.path.insert(0, str(SERVER_DIR))
+
+# Set to a Docker image tag (e.g. mscaldas/esv-bible-mcp-server or a local
+# build like esv-bible-mcp-server:local) to spawn the ESV tool server from
+# that container instead of `uv run server.py` — useful for checking the
+# published release image. Unset (the default) uses the local uv project.
+ESV_MCP_DOCKER_IMAGE = os.environ.get("ESV_MCP_DOCKER_IMAGE")
 
 import esv_client  # noqa: E402
 import server as esv_server  # noqa: E402
@@ -285,6 +292,22 @@ async def run_command(
     return usage(f"Unknown command /{command}. Try /help.")
 
 
+def _esv_bible_server_config() -> dict[str, Any]:
+    if ESV_MCP_DOCKER_IMAGE:
+        return {
+            "command": "docker",
+            "args": [
+                "run", "--rm", "-i",
+                "--env-file", str(SERVER_DIR / ".env"),
+                ESV_MCP_DOCKER_IMAGE,
+            ],
+        }
+    return {
+        "command": "uv",
+        "args": ["--directory", str(SERVER_DIR), "run", "server.py"],
+    }
+
+
 async def _build_options() -> ClaudeAgentOptions:
     prompt_tools = await _build_prompt_bridge_tools()
     prompt_server = create_sdk_mcp_server(name="esv-prompts", tools=prompt_tools)
@@ -292,10 +315,7 @@ async def _build_options() -> ClaudeAgentOptions:
     return ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
         mcp_servers={
-            "esv-bible": {
-                "command": "uv",
-                "args": ["--directory", str(SERVER_DIR), "run", "server.py"],
-            },
+            "esv-bible": _esv_bible_server_config(),
             "esv-prompts": prompt_server,
         },
         allowed_tools=[
