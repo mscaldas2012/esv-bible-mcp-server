@@ -1,0 +1,65 @@
+name: 'Claude Changelog Updater'
+description: 'Uses Claude to analyze a pull request and update CHANGELOG.md with a semantic-version bump and a high-level summary of the changes.'
+author: 'mscaldas'
+
+branding:
+  icon: 'file-text'
+  color: 'purple'
+
+inputs:
+  anthropic-api-key:
+    description: 'Anthropic API key used to call Claude.'
+    required: true
+  github-token:
+    description: 'Token used to read PR data and push the changelog commit. Needs contents:write and pull-requests:read.'
+    required: false
+    default: ${{ github.token }}
+  changelog-path:
+    description: 'Path to the changelog file, relative to the repo root.'
+    required: false
+    default: 'CHANGELOG.md'
+  model:
+    description: 'Claude model to use.'
+    required: false
+    default: 'claude-sonnet-5'
+  base-version:
+    description: 'Version to seed the changelog with if it has no prior version entries yet.'
+    required: false
+    default: '0.1.0'
+  commit-message:
+    description: 'Commit message used when pushing the changelog update.'
+    required: false
+    default: 'chore: update changelog [skip ci]'
+  bot-name:
+    description: 'Git author/committer name used for the changelog commit. Also used to detect and skip bot-authored commits, which prevents infinite trigger loops.'
+    required: false
+    default: 'claude-changelog-bot'
+  bot-email:
+    description: 'Git author/committer email used for the changelog commit.'
+    required: false
+    default: 'claude-changelog-bot@users.noreply.github.com'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install action dependencies
+      shell: bash
+      run: npm install --no-save --no-audit --no-fund --prefix "${{ github.action_path }}"
+
+    - name: Run Claude changelog updater
+      shell: bash
+      run: node "${{ github.action_path }}/index.js"
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        CHANGELOG_PATH: ${{ inputs.changelog-path }}
+        CLAUDE_MODEL: ${{ inputs.model }}
+        BASE_VERSION: ${{ inputs.base-version }}
+        COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        BOT_NAME: ${{ inputs.bot-name }}
+        BOT_EMAIL: ${{ inputs.bot-email }}
