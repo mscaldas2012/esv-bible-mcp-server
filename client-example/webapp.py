@@ -1,15 +1,15 @@
 """Chat web app for talking to the ESV Bible agent (text + audio).
 
-Run with:  uv run webapp.py
+Run from the repo root with:  uv run --group client-example client-example/webapp.py
 
 Rides your Claude.ai subscription via the `claude` CLI (see agent.py) rather
 than spending Developer Platform API credits — make sure ANTHROPIC_API_KEY
 is NOT set in the environment this runs in, or it'll be used instead.
 
-Stateless-per-request design, same shape as the repo-root webapp.py: each
-request opens a fresh ClaudeSDKClient (inside agent.reply), resuming the
-prior turn via the Claude session_id carried in Flask's signed-cookie
-session rather than keeping a client connected for the server's lifetime.
+Stateless-per-request design: each request opens a fresh ClaudeSDKClient
+(inside agent.reply), resuming the prior turn via the Claude session_id
+carried in Flask's signed-cookie session rather than keeping a client
+connected for the server's lifetime.
 """
 
 import asyncio

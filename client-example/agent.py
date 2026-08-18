@@ -5,8 +5,7 @@ The SDK shells out to the local `claude` CLI, so it rides your Claude.ai
 subscription login rather than spending Developer Platform API credits.
 
 IMPORTANT: this only works if ANTHROPIC_API_KEY is NOT set in the process
-environment — an exported key always wins over your subscription login (same
-rule the repo-root webapp.py documents for the customer-support agent build).
+environment — an exported key always wins over your subscription login.
 
 Connects to server.py as a real external MCP server over stdio (same command
 shape as .mcp.json) for the three ESV tools. MCP *prompts* aren't natively
@@ -21,6 +20,7 @@ the rendered template back as the tool result for the model to follow.
 """
 
 import dataclasses
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -38,10 +38,14 @@ from claude_agent_sdk import (
     create_sdk_mcp_server,
 )
 
-import esv_client
-import server as esv_server
+# server.py and esv_client.py live in the repo root (the actual MCP server
+# package); this client example lives one level down and imports them
+# in-process, so the root has to be on sys.path.
+SERVER_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(SERVER_DIR))
 
-SERVER_DIR = Path(__file__).resolve().parent
+import esv_client  # noqa: E402
+import server as esv_server  # noqa: E402
 
 AUDIO_TOOL_NAME = "mcp__esv-bible__get_passage_audio_url"
 
@@ -368,9 +372,8 @@ async def reply(user_message: str, resume_session_id: str | None = None) -> dict
     """Run one turn against a fresh ClaudeSDKClient, resuming resume_session_id if given.
 
     Returns {"reply": str, "audio_url": str | None, "session_id": str, "log": list[str]}.
-    `log` mirrors the format used by the repo-root main.py's process_message —
-    "[tool_use] name(args)" per call, "[error] name: message" for failures,
-    "stop_reason=..." at the end — so both apps' UIs can render logs the same way.
+    `log` entries look like "[tool_use] name(args)" per call, "[error] name:
+    message" for failures, and "stop_reason=..." at the end.
     """
     options = await _build_options()
     if resume_session_id:

@@ -6,9 +6,9 @@ An MCP server that wraps the [ESV Bible API](https://api.esv.org/docs/), exposin
 - `get_passage_text(reference, ...)` — retrieve plain-text Scripture for a reference (e.g. `"John 3:16"`, `"Genesis 1-3"`).
 - `get_passage_audio_url(reference)` — resolve a direct MP3 URL for spoken-word audio of a passage.
 
-Also includes `webapp.py`, a small Flask chat UI that sits on top of the same ESV client
-code (`esv_client.py`) — type a passage reference, get the text back plus an audio player
-you can hit play on whenever you want.
+The server itself is just `server.py`, `esv_client.py`, and `canon.py` — that's what GitHub
+Releases track. A small Flask chat app that exercises the server end-to-end lives separately
+in [`client-example/`](client-example/); it's a demo/testing harness, not part of the server.
 
 ## Setup
 
@@ -21,16 +21,27 @@ you can hit play on whenever you want.
    ```
 
    The server loads `.env` itself at startup (via `python-dotenv`), so this works no matter
-   how it's launched — directly, through the MCP Inspector, or via Claude Code's `.mcp.json`
+   how it's launched — directly, through the MCP Inspector, or via a client's `.mcp.json`
    — without depending on each launcher's environment-forwarding behavior. `.env` is
    git-ignored; no key is stored in the repo.
 
-3. This server is also registered in the repo root's `.mcp.json` under `esv-bible`.
+3. To use this server from an MCP client (Claude Code, Claude Desktop, etc.), point its
+   `.mcp.json`/config at this directory, e.g.:
+
+   ```json
+   {
+     "mcpServers": {
+       "esv-bible": {
+         "command": "uv",
+         "args": ["--directory", "/path/to/esv-bible-mcp-server", "run", "server.py"]
+       }
+     }
+   }
+   ```
 
 ## Running standalone
 
 ```bash
-cd esv-bible-mcp-server
 uv sync
 uv run server.py
 ```
@@ -38,20 +49,14 @@ uv run server.py
 ## Running with the MCP Inspector
 
 ```bash
-cd esv-bible-mcp-server
 uv run mcp dev server.py
 ```
 
-## Running the chat web app
+## Trying it out: the client example
 
-```bash
-cd esv-bible-mcp-server
-uv run webapp.py
-```
-
-Then open http://localhost:5050. Type a passage reference (e.g. "Psalm 23") and the app
-returns the ESV text plus an audio player; if the input doesn't resolve to a reference it
-falls back to a full-text search and offers clickable suggestions.
+See [`client-example/README.md`](client-example/README.md) for a Flask chat UI that drives
+this server through the Claude Agent SDK — useful for quickly poking at the tools without
+wiring up a full MCP client.
 
 ## Notes
 
