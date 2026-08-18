@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESV Bible Chat</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f1ea;
+    --panel: #ffffff;
+    --text: #2b2620;
+    --muted: #7a7367;
+    --accent: #6b4f2a;
+    --accent-2: #b08d57;
+    --bubble-user: #6b4f2a;
+    --bubble-user-text: #fff;
+    --bubble-bot: #efe9dd;
+    --border: #e2dbca;
+    --log-bg: #ebe4d4;
+    --log-tool: #6b4f2a;
+    --log-error: #a3382f;
+    --log-stop: #a8a094;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17140f;
+      --panel: #241f18;
+      --text: #ece5d6;
+      --muted: #a89d86;
+      --accent: #c9a866;
+      --accent-2: #8a6a3a;
+      --bubble-user: #c9a866;
+      --bubble-user-text: #241f18;
+      --bubble-bot: #2e2820;
+      --border: #3a3327;
+      --log-bg: #141210;
+      --log-tool: #c9a866;
+      --log-error: #e08279;
+      --log-stop: #6b6459;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.1rem;
+    letter-spacing: 0.02em;
+  }
+  header p {
+    margin: 0.15rem 0 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  #layout {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+  #chat-pane {
+    flex: 1.3;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+  }
+  #log-pane {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--log-bg);
+  }
+  .pane-header {
+    padding: 0.5rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .row { display: flex; }
+  .row.user { justify-content: flex-end; }
+  .row.bot { justify-content: flex-start; }
+  .bubble {
+    max-width: min(640px, 85%);
+    padding: 0.75rem 1rem;
+    border-radius: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .row.user .bubble {
+    background: var(--bubble-user);
+    color: var(--bubble-user-text);
+    border-bottom-right-radius: 4px;
+  }
+  .row.bot .bubble {
+    background: var(--bubble-bot);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .reference {
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    color: var(--accent);
+  }
+  .bubble audio {
+    display: block;
+    width: 100%;
+    margin-top: 0.75rem;
+  }
+  .suggestion-list {
+    margin: 0.4rem 0 0;
+    padding-left: 1.1rem;
+  }
+  .suggestion-list li {
+    cursor: pointer;
+    color: var(--accent);
+    text-decoration: underline;
+    margin-bottom: 0.2rem;
+  }
+  .error .bubble { border-color: #b3413d; color: #b3413d; }
+  .typing { color: var(--muted); font-style: italic; }
+  form#composer {
+    position: relative;
+    display: flex;
+    gap: 0.6rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+  }
+  #input {
+    flex: 1;
+    padding: 0.7rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 1rem;
+  }
+  #input:focus { outline: 2px solid var(--accent-2); }
+
+  #picker {
+    position: absolute;
+    left: 1.5rem;
+    right: calc(1.5rem + 5.5rem);
+    bottom: calc(100% + 0.4rem);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  #picker.hidden { display: none; }
+  .picker-item {
+    padding: 0.5rem 0.8rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .picker-item:last-child { border-bottom: none; }
+  .picker-item.active { background: var(--bubble-bot); }
+  .picker-name {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .picker-desc {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .picker-empty {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  button[type="submit"] {
+    padding: 0.7rem 1.3rem;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: var(--bubble-user-text, #fff);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button[type="submit"]:disabled { opacity: 0.6; cursor: default; }
+
+  #log-lines {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    line-height: 1.6;
+  }
+  .log-line { white-space: pre-wrap; word-break: break-word; }
+  .log-line.tool { color: var(--log-tool); }
+  .log-line.direct { color: var(--log-tool); font-style: italic; }
+  .log-line.error { color: var(--log-error); }
+  .log-line.stop { color: var(--log-stop); }
+  .log-line.startup { color: var(--accent-2); }
+  .log-line.turn {
+    color: var(--muted);
+    margin-top: 0.5rem;
+    border-top: 1px dashed var(--border);
+    padding-top: 0.4rem;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>ESV Bible Chat</h1>
+    <p>Ask naturally, or use a slash command: /search, /text, /audio, /explain, /help.</p>
+  </header>
+
+  <div id="layout">
+    <div id="chat-pane">
+      <div id="chat"></div>
+      <form id="composer">
+        <div id="picker" class="hidden"></div>
+        <input id="input" type="text" placeholder="e.g. &quot;explain John 3:16&quot; or /help" autocomplete="off" autofocus>
+        <button type="submit">Send</button>
+      </form>
+    </div>
+    <div id="log-pane">
+      <div class="pane-header">Agent log (tool calls)</div>
+      <div id="log-lines"></div>
+    </div>
+  </div>
+
+<script>
+  const chat = document.getElementById('chat');
+  const form = document.getElementById('composer');
+  const input = document.getElementById('input');
+  const button = form.querySelector('button');
+  const logEl = document.getElementById('log-lines');
+  const picker = document.getElementById('picker');
+
+  const SLASH_COMMANDS = {{ slash_commands | tojson }};
+  let pickerMatches = [];
+  let pickerIndex = -1;
+
+  function updatePicker() {
+    const match = input.value.match(/^\/(\w*)$/);
+    if (!match) { hidePicker(); return; }
+    const frag = match[1].toLowerCase();
+    pickerMatches = SLASH_COMMANDS.filter((c) => c.name.startsWith(frag));
+    pickerIndex = 0;
+    renderPicker();
+  }
+
+  function renderPicker() {
+    if (!pickerMatches.length) { hidePicker(); return; }
+    picker.innerHTML = '';
+    pickerMatches.forEach((c, i) => {
+      const item = document.createElement('div');
+      item.className = 'picker-item' + (i === pickerIndex ? ' active' : '');
+      const name = document.createElement('div');
+      name.className = 'picker-name';
+      name.textContent = '/' + c.name + (c.hint ? ' ' + c.hint : '');
+      const desc = document.createElement('div');
+      desc.className = 'picker-desc';
+      desc.textContent = c.description;
+      item.appendChild(name);
+      item.appendChild(desc);
+      // mousedown (not click) fires before the input blurs, so selection
+      // works without the picker disappearing out from under the click.
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        selectCommand(c);
+      });
+      picker.appendChild(item);
+    });
+    picker.classList.remove('hidden');
+  }
+
+  function hidePicker() {
+    picker.classList.add('hidden');
+    pickerMatches = [];
+    pickerIndex = -1;
+  }
+
+  function selectCommand(c) {
+    input.value = '/' + c.name + ' ';
+    hidePicker();
+    input.focus();
+  }
+
+  input.addEventListener('input', updatePicker);
+
+  input.addEventListener('keydown', (e) => {
+    if (picker.classList.contains('hidden')) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      pickerIndex = (pickerIndex + 1) % pickerMatches.length;
+      renderPicker();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      pickerIndex = (pickerIndex - 1 + pickerMatches.length) % pickerMatches.length;
+      renderPicker();
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      selectCommand(pickerMatches[pickerIndex]);
+    } else if (e.key === 'Escape') {
+      hidePicker();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!picker.contains(e.target) && e.target !== input) hidePicker();
+  });
+
+  function addRow(role, buildContent) {
+    const row = document.createElement('div');
+    row.className = 'row ' + role;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    buildContent(bubble);
+    row.appendChild(bubble);
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+    return row;
+  }
+
+  function addUserMessage(text) {
+    addRow('user', (bubble) => { bubble.textContent = text; });
+  }
+
+  function addTyping() {
+    return addRow('bot', (bubble) => {
+      bubble.classList.add('typing');
+      bubble.textContent = 'Thinking…';
+    });
+  }
+
+  function renderAssistant(bubble, data) {
+    bubble.innerHTML = '';
+    const text = document.createElement('div');
+    text.textContent = data.text;
+    bubble.appendChild(text);
+
+    if (data.audio_url) {
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.preload = 'none';
+      audio.src = data.audio_url;
+      bubble.appendChild(audio);
+    }
+  }
+
+  function appendLog(lines, label) {
+    const marker = document.createElement('div');
+    marker.className = 'log-line turn';
+    marker.textContent = label || '— turn —';
+    logEl.appendChild(marker);
+
+    (lines || []).forEach((line) => {
+      const div = document.createElement('div');
+      div.className = 'log-line';
+      if (line.startsWith('[tool_use]')) div.classList.add('tool');
+      else if (line.startsWith('[direct_call]')) div.classList.add('direct');
+      else if (line.startsWith('[error]')) div.classList.add('error');
+      else if (line.startsWith('stop_reason=')) div.classList.add('stop');
+      else if (line.startsWith('[slash_command]') || line.startsWith('[prompt_expand]')) div.classList.add('stop');
+      else if (line.startsWith('[startup]') || line.match(/^\s*\[(tool|resource|resource-template|prompt)\]/)) {
+        div.classList.add('startup');
+      }
+      div.textContent = line;
+      logEl.appendChild(div);
+    });
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  const startupLog = {{ startup_log | tojson }};
+  if (startupLog.length) {
+    appendLog(startupLog, '— startup —');
+  }
+
+  async function sendMessage(text) {
+    addUserMessage(text);
+    const typingRow = addTyping();
+    button.disabled = true;
+
+    try {
+      const res = await fetch('/api/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      const bubble = typingRow.querySelector('.bubble');
+      bubble.classList.remove('typing');
+
+      if (!res.ok || data.type === 'error') {
+        typingRow.classList.add('error');
+        bubble.textContent = data.message || 'Something went wrong.';
+      } else if (data.type === 'assistant') {
+        renderAssistant(bubble, data);
+        appendLog(data.log);
+      } else {
+        bubble.textContent = 'Unexpected response.';
+      }
+    } catch (err) {
+      const bubble = typingRow.querySelector('.bubble');
+      typingRow.classList.add('error');
+      bubble.classList.remove('typing');
+      bubble.textContent = 'Network error talking to the server.';
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    sendMessage(text);
+  });
+</script>
+</body>
+</html>

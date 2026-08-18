@@ -1,0 +1,19 @@
+[project]
+name = "esv-bible-mcp-server"
+version = "0.1.0"
+description = "MCP server exposing tools for the ESV Bible API (search, passage text, audio)"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.9,<2.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+    "flask>=3.0.0",
+    "claude-agent-sdk>=0.2.132",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["server.py", "esv_client.py", "webapp.py", "agent.py", "canon.py"]
